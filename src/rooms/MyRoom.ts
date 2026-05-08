@@ -1,3 +1,12 @@
+/**
+ * @project The 8th District Arcade
+ * @file MyRoom.ts - Dominoes Game Engine
+ * @date 2026
+ * * © 2026. All Rights Reserved.
+ * Unauthorized copying of this file, via any medium is strictly prohibited.
+ * Proprietary and confidential.
+ */
+
 import { Room, Client } from "colyseus";
 
 type DominoTile = { id: string; left: number; right: number; };
@@ -362,7 +371,6 @@ export class TableRoom extends Room {
     return null; 
   }
 
-  // FIXED SCORING ENGINE: Properly calculates exposed doubles.
   getOpenEndTotal() {
     if (!this.boardCenter) return 0;
     let total = 0;
@@ -370,8 +378,8 @@ export class TableRoom extends Room {
     const getBranchVal = (branch: BoardTile[]) => {
       if (branch.length === 0) return 0;
       const last = branch[branch.length - 1];
-      if (last.left === last.right) return last.left + last.right; // Double on the end counts fully
-      return last.outward; // Single on the end counts outward
+      if (last.left === last.right) return last.left + last.right;
+      return last.outward; 
     };
 
     const leftEmpty = this.boardBranches.left.length === 0;
@@ -380,30 +388,22 @@ export class TableRoom extends Room {
     const bottomEmpty = this.boardBranches.bottom.length === 0;
     const centerIsDouble = this.boardCenter.left === this.boardCenter.right;
 
-    // If it's the very first tile, evaluate both sides.
     if (leftEmpty && rightEmpty && topEmpty && bottomEmpty) {
       return this.boardCenter.left + this.boardCenter.right;
     }
 
-    // Evaluate Left Branch
     if (leftEmpty) {
-      // If the left side is empty, the center tile is the "end". 
-      // If the center tile is a double, the entire double counts (left + right).
       total += centerIsDouble ? (this.boardCenter.left + this.boardCenter.right) : this.boardCenter.inward;
     } else {
       total += getBranchVal(this.boardBranches.left);
     }
 
-    // Evaluate Right Branch
     if (rightEmpty) {
-      // Avoid double-counting the starting double if both left and right are somehow empty.
-      // (The block above already returned if everything was empty, so we are safe here).
       total += centerIsDouble ? (this.boardCenter.left + this.boardCenter.right) : this.boardCenter.outward;
     } else {
       total += getBranchVal(this.boardBranches.right);
     }
 
-    // Evaluate Top & Bottom Branches (they only count if tiles are played on them)
     if (!topEmpty) total += getBranchVal(this.boardBranches.top);
     if (!bottomEmpty) total += getBranchVal(this.boardBranches.bottom);
 
@@ -463,7 +463,8 @@ export class TableRoom extends Room {
     if (!this.canSlamMove(player, tile, side)) slam = false;
 
     this.clearTurnTimer(); player.hand.splice(tileIndex, 1);
-    if (this.forcedFirstTileId === tile.id) this.forcedFirstTileId = null;
+    
+    if (this.forcedFirstTileId) this.forcedFirstTileId = null;
 
     this.placeTileOnBoard(player, tile, side, legalMove);
 

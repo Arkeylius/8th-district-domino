@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8">
   <title>8th District Domino Table</title>
-
   <style>
     body { font-family: Arial, sans-serif; text-align: center; background: #09060f; color: white; margin: 0; padding: 10px; overflow-x: hidden; overflow-anchor: auto; }
     h1 { margin: 8px 0; }
@@ -25,39 +25,21 @@
     .btn-lobby { background: transparent; color: #f87171; border: 1px solid #f87171; }
     .btn-lobby:hover { background: #f87171; color: #111; transform: translateY(-2px); box-shadow: 0 6px 15px rgba(248, 113, 113, 0.2); }
 
-    .tableShell {
-      width: min(1050px, 96vw); height: min(650px, 72vh); min-height: 520px; margin: 10px auto; position: relative;
-      border-radius: 28px; background: radial-gradient(circle at center, #6551a7 0%, #37256a 45%, #160d2f 100%);
-      border: 12px solid #151323; box-shadow: 0 0 0 4px #2c2448, inset 0 0 80px rgba(0,0,0,.55), 0 18px 45px rgba(0,0,0,.7); overflow: hidden; 
-    }
+    .tableShell { width: min(1050px, 96vw); height: min(650px, 72vh); min-height: 520px; margin: 10px auto; position: relative; border-radius: 28px; background: radial-gradient(circle at center, #6551a7 0%, #37256a 45%, #160d2f 100%); border: 12px solid #151323; box-shadow: 0 0 0 4px #2c2448, inset 0 0 80px rgba(0,0,0,.55), 0 18px 45px rgba(0,0,0,.7); overflow: hidden; }
 
     .tableShell.slamRock { animation: tableSlamRock 1.45s ease-in-out; }
-    @keyframes tableSlamRock {
-      0% { transform: translate(0, 0) rotate(0deg) scale(1); }
-      8% { transform: translate(-14px, 8px) rotate(-1.4deg) scale(1.01); }
-      16% { transform: translate(16px, -9px) rotate(1.3deg) scale(1.01); }
-      24% { transform: translate(-12px, -6px) rotate(-1deg) scale(1); }
-      35% { transform: translate(13px, 7px) rotate(.9deg) scale(1.005); }
-      48% { transform: translate(-8px, 4px) rotate(-.6deg); }
-      62% { transform: translate(6px, -3px) rotate(.4deg); }
-      78% { transform: translate(-3px, 2px) rotate(-.2deg); }
-      100% { transform: translate(0, 0) rotate(0deg) scale(1); }
-    }
+    @keyframes tableSlamRock { 0% { transform: translate(0, 0) rotate(0deg) scale(1); } 8% { transform: translate(-14px, 8px) rotate(-1.4deg) scale(1.01); } 16% { transform: translate(16px, -9px) rotate(1.3deg) scale(1.01); } 24% { transform: translate(-12px, -6px) rotate(-1deg) scale(1); } 35% { transform: translate(13px, 7px) rotate(.9deg) scale(1.005); } 48% { transform: translate(-8px, 4px) rotate(-.6deg); } 62% { transform: translate(6px, -3px) rotate(.4deg); } 78% { transform: translate(-3px, 2px) rotate(-.2deg); } 100% { transform: translate(0, 0) rotate(0deg) scale(1); } }
 
     .tableRail { position: absolute; inset: 18px; border-radius: 20px; border: 2px solid rgba(255,255,255,.1); box-shadow: inset 0 0 25px rgba(255,255,255,.08); pointer-events: none; }
 
     #washOverlay { position: absolute; inset: 0; z-index: 50; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; border-radius: 16px; }
-    .washTile {
-      width: 28px; height: 54px; background: #111; border: 2px solid #444; border-radius: 6px; position: absolute;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.8); animation: washSwirl 1.2s cubic-bezier(0.4, 0, 0.2, 1) infinite alternate;
-    }
+    .washTile { width: 28px; height: 54px; background: #111; border: 2px solid #444; border-radius: 6px; position: absolute; box-shadow: 0 4px 10px rgba(0,0,0,0.8); animation: washSwirl 1.2s cubic-bezier(0.4, 0, 0.2, 1) infinite alternate; }
     @keyframes washSwirl { 0% { transform: translate(0, 0) rotate(0deg); } 100% { transform: translate(var(--dx), var(--dy)) rotate(var(--dr)); } }
 
     .tableCenter { position: absolute; left: 50%; top: 49%; width: 0; height: 0; z-index: 3; transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1); }
 
     .branchRow, .branchColumn { display: flex; align-items: center; gap: 0; }
     .centerSlot { position: absolute; left: 0; top: 0; transform: translate(-50%, -50%); display: flex; }
-    
     .branchLeft { position: absolute; right: calc(var(--center-w) / 2); top: 0; transform: translateY(-50%); flex-direction: row-reverse; }
     .branchRight { position: absolute; left: calc(var(--center-w) / 2); top: 0; transform: translateY(-50%); flex-direction: row; }
     .branchTop { position: absolute; bottom: calc(var(--center-h) / 2); left: 0; transform: translateX(-50%); flex-direction: column-reverse; }
@@ -69,28 +51,19 @@
     .playZone.horizontal { width: 82px; height: 46px; margin: 0 4px; }
     .playZone.vertical { width: 46px; height: 82px; margin: 4px 0; }
 
-    .slamHand {
-      position: absolute; right: -18px; top: -18px; width: 44px; height: 44px; border-radius: 50%; background: gold; color: #111; display: flex; align-items: center; justify-content: center; font-size: 26px; font-weight: bold; border: 3px solid #fff4a8; box-shadow: 0 0 22px rgba(255, 215, 0, .95); animation: slamHandPop .22s ease-out; z-index: 50; cursor: pointer; user-select: none;
-    }
+    .slamHand { position: absolute; right: -18px; top: -18px; width: 44px; height: 44px; border-radius: 50%; background: gold; color: #111; display: flex; align-items: center; justify-content: center; font-size: 26px; font-weight: bold; border: 3px solid #fff4a8; box-shadow: 0 0 22px rgba(255, 215, 0, .95); animation: slamHandPop .22s ease-out; z-index: 50; cursor: pointer; user-select: none; }
     @keyframes slamHandPop { from { transform: scale(.4) rotate(-25deg); opacity: 0; } to { transform: scale(1) rotate(0deg); opacity: 1; } }
 
     .yourTurn { color: #00ffcc; font-weight: bold; font-size: 20px; }
 
-    .seat {
-      position: absolute; display: flex; align-items: center; width: auto; min-width: 140px; max-width: 190px;
-      padding: 6px 16px 6px 6px; background: rgba(20, 15, 30, 0.75); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-      border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 40px; box-shadow: 0 8px 24px rgba(0,0,0,0.5); z-index: 4; transition: all 0.3s ease;
-    }
-    
+    .seat { position: absolute; display: flex; align-items: center; width: auto; min-width: 140px; max-width: 190px; padding: 6px 16px 6px 6px; background: rgba(20, 15, 30, 0.75); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 40px; box-shadow: 0 8px 24px rgba(0,0,0,0.5); z-index: 4; transition: all 0.3s ease; }
     .seat.empty { opacity: 0.35; }
     .seat.turnSeat { border-color: rgba(255, 215, 0, 0.9); box-shadow: 0 0 20px rgba(255, 215, 0, 0.6); background: rgba(40, 30, 10, 0.85); }
     .seat.turnUrgent { animation: urgentPulse 0.75s infinite; }
     @keyframes urgentPulse { 0% { box-shadow: 0 0 12px rgba(255, 215, 0, .4); filter: brightness(1); } 50% { box-shadow: 0 0 30px rgba(255, 215, 0, 1); filter: brightness(1.2); } 100% { box-shadow: 0 0 12px rgba(255, 215, 0, .4); filter: brightness(1); } }
 
-    .seat.bottom { bottom: 110px; left: 25px; transform: none; }
-    .seat.left { top: 25px; left: 25px; transform: none; }
-    .seat.top { top: 25px; right: 25px; transform: none; }
-    .seat.right { bottom: 110px; right: 25px; transform: none; }
+    .seat.bottom { bottom: 110px; left: 25px; transform: none; } .seat.left { top: 25px; left: 25px; transform: none; }
+    .seat.top { top: 25px; right: 25px; transform: none; } .seat.right { bottom: 110px; right: 25px; transform: none; }
 
     .avatar { width: 46px; height: 46px; flex-shrink: 0; border-radius: 50%; background: linear-gradient(135deg, #6551a7, #37256a); border: 2px solid rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 20px; overflow: hidden; }
     .avatar img { width: 100%; height: 100%; object-fit: cover; }
@@ -109,15 +82,9 @@
     .domino-wrapper.vertical { width: 46px; height: 82px; }
     .domino-wrapper.horizontal { width: 82px; height: 46px; }
 
-    .domino {
-      display: inline-flex; flex-direction: column; width: 42px; height: 78px; padding: 3px 0; align-items: center;
-      background: #f7f7f7; color: black; border: 2px solid #222; border-radius: 9px; box-sizing: content-box;
-      box-shadow: 0 3px 8px rgba(0,0,0,0.45); cursor: pointer; transition: filter 0.2s, transform 0.2s; margin: 0; flex-shrink: 0;
-    }
-    
+    .domino { display: inline-flex; flex-direction: column; width: 42px; height: 78px; padding: 3px 0; align-items: center; background: #f7f7f7; color: black; border: 2px solid #222; border-radius: 9px; box-sizing: content-box; box-shadow: 0 3px 8px rgba(0,0,0,0.45); cursor: pointer; transition: filter 0.2s, transform 0.2s; margin: 0; flex-shrink: 0; }
     .dominoHalf { position: relative; width: 34px; height: 34px; flex-shrink: 0; }
     .dominoHalf:first-child { border-bottom: 2px solid #222; margin-bottom: 2px; }
-
     .domino.selected { background: gold; outline: 4px solid orange; }
     .domino.spinner { background: #fff58a; outline: 3px solid gold; box-shadow: 0 0 12px gold; }
     .domino.slamLoose { z-index: 30; transition: transform 0.12s ease; filter: brightness(1.15); box-shadow: 0 8px 18px rgba(0,0,0,0.75); }
@@ -580,7 +547,7 @@
 
     function renderState(data) {
       latestState = data;
-
+      
       if (createMode && isMeHost() && !tableLaunched()) showSetupOnly(); else showGameTable(data);
 
       renderSeats(data.players || []); updateConnectionButtons(); renderQueue(data.queue || []); renderBoard();
@@ -668,15 +635,21 @@
       try {
         playerName = prompt("Enter your name:");
         if (!playerName || playerName.trim() === "") playerName = "Guest";
-        client = new Client("ws://localhost:2567");
+        
+        // RENDER CONNECTION FIX
+        const endpoint = window.location.hostname === "localhost" 
+           ? "ws://localhost:2567" 
+           : "wss://eightth-district-domino.onrender.com";
+        client = new Client(endpoint);
 
         const params = new URLSearchParams(window.location.search);
         const roomId = params.get("roomId"); createMode = params.get("create") === "1";
         const action = params.get("action");
 
-        if (createMode) room = await client.create("table");
+        // RENDER ROOM NAME FIX
+        if (createMode) room = await client.create("my_room");
         else if (roomId) room = await client.joinById(roomId);
-        else room = await client.joinOrCreate("table");
+        else room = await client.joinOrCreate("my_room");
 
         document.getElementById("status").textContent = "Connected as " + playerName + " | Room: " + room.roomId;
 
