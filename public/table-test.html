@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>8th District Domino Table</title>
+
+  <style>
+    body { font-family: Arial, sans-serif; text-align: center; background: #09060f; color: white; margin: 0; padding: 10px; overflow-x: hidden; overflow-anchor: auto; }
+    h1 { margin: 8px 0; }
+    button { margin: 6px; padding: 12px 16px; cursor: pointer; border-radius: 8px; border: none; font-size: 16px; font-weight: bold; }
+    button:disabled { opacity: 0.4; cursor: not-allowed; }
+    select, input { padding: 10px; margin: 5px; border-radius: 6px; font-size: 16px; }
+    #hostIntro, #tableName { width: 80%; max-width: 700px; }
+    .hidden { display: none !important; }
+    .options, .chat, .queueBox { margin: 15px auto; max-width: 900px; padding: 15px; border: 1px solid #444; background: #111; border-radius: 12px; }
+
+    .modalOverlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(9, 6, 15, 0.75); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 1000; display: flex; align-items: center; justify-content: center; }
+    .modalContent { background: rgba(21, 21, 24, 0.95); padding: 40px 30px; border-radius: 20px; border: 1px solid rgba(255, 215, 0, 0.15); text-align: center; max-width: 380px; box-shadow: 0 25px 50px rgba(0,0,0,0.8); }
+    .modalContent h2 { color: #facc15; margin-top: 0; font-size: 24px; letter-spacing: 1px; text-transform: uppercase; }
+    .modalContent p { color: #9ca3af; margin-bottom: 30px; font-size: 15px; line-height: 1.5; }
+    .modalContent button { width: 100%; margin: 6px 0; font-size: 15px; padding: 14px; border-radius: 25px; transition: all 0.2s ease; cursor: pointer; font-weight: 600; border: none; }
+    .btn-cancel { background: #facc15; color: #111827; }
+    .btn-cancel:hover { background: #eab308; transform: translateY(-2px); box-shadow: 0 6px 15px rgba(250, 204, 21, 0.2); }
+    .btn-spectate { background: transparent; color: #e5e7eb; border: 1px solid #37256a; }
+    .btn-spectate:hover { background: #37256a; color: white; transform: translateY(-2px); }
+    .btn-lobby { background: transparent; color: #f87171; border: 1px solid #f87171; }
+    .btn-lobby:hover { background: #f87171; color: #111; transform: translateY(-2px); box-shadow: 0 6px 15px rgba(248, 113, 113, 0.2); }
+
+    .tableShell {
+      width: min(1050px, 96vw); height: min(650px, 72vh); min-height: 520px; margin: 10px auto; position: relative;
+      border-radius: 28px; background: radial-gradient(circle at center, #6551a7 0%, #37256a 45%, #160d2f 100%);
+      border: 12px solid #151323; box-shadow: 0 0 0 4px #2c2448, inset 0 0 80px rgba(0,0,0,.55), 0 18px 45px rgba(0,0,0,.7); overflow: hidden; 
+    }
+
+    .tableShell.slamRock { animation: tableSlamRock 1.45s ease-in-out; }
+    @keyframes tableSlamRock {
+      0% { transform: translate(0, 0) rotate(0deg) scale(1); }
+      8% { transform: translate(-14px, 8px) rotate(-1.4deg) scale(1.01); }
+      16% { transform: translate(16px, -9px) rotate(1.3deg) scale(1.01); }
+      24% { transform: translate(-12px, -6px) rotate(-1deg) scale(1); }
+      35% { transform: translate(13px, 7px) rotate(.9deg) scale(1.005); }
+      48% { transform: translate(-8px, 4px) rotate(-.6deg); }
+      62% { transform: translate(6px, -3px) rotate(.4deg); }
+      78% { transform: translate(-3px, 2px) rotate(-.2deg); }
+      100% { transform: translate(0, 0) rotate(0deg) scale(1); }
+    }
+
+    .tableRail { position: absolute; inset: 18px; border-radius: 20px; border: 2px solid rgba(255,255,255,.1); box-shadow: inset 0 0 25px rgba(255,255,255,.08); pointer-events: none; }
+
+    #washOverlay { position: absolute; inset: 0; z-index: 50; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; border-radius: 16px; }
+    .washTile {
+      width: 28px; height: 54px; background: #111; border: 2px solid #444; border-radius: 6px; position: absolute;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.8); animation: washSwirl 1.2s cubic-bezier(0.4, 0, 0.2, 1) infinite alternate;
+    }
+    @keyframes washSwirl { 0% { transform: translate(0, 0) rotate(0deg); } 100% { transform: translate(var(--dx), var(--dy)) rotate(var(--dr)); } }
+
+    .tableCenter { position: absolute; left: 50%; top: 49%; width: 0; height: 0; z-index: 3; transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1); }
+
+    .branchRow, .branchColumn { display: flex; align-items: center; gap: 0; }
+    .centerSlot { position: absolute; left: 0; top: 0; transform: translate(-50%, -50%); display: flex; }
+    
+    .branchLeft { position: absolute; right: calc(var(--center-w) / 2); top: 0; transform: translateY(-50%); flex-direction: row-reverse; }
+    .branchRight { position: absolute; left: calc(var(--center-w) / 2); top: 0; transform: translateY(-50%); flex-direction: row; }
+    .branchTop { position: absolute; bottom: calc(var(--center-h) / 2); left: 0; transform: translateX(-50%); flex-direction: column-reverse; }
+    .branchBottom { position: absolute; top: calc(var(--center-h) / 2); left: 0; transform: translateX(-50%); flex-direction: column; }
+
+    .playZone { border-radius: 9px; border: 2px dashed rgba(255, 215, 0, 0.5); background: rgba(255, 215, 0, 0.05); cursor: pointer; transition: all 0.2s; flex-shrink: 0; display: none; }
+    .playZone.active { display: flex; align-items: center; justify-content: center; border-color: rgba(255, 215, 0, 1); background: rgba(255, 215, 0, 0.2); box-shadow: 0 0 15px rgba(255, 215, 0, 0.4); }
+    .playZone.active:hover { background: rgba(255, 215, 0, 0.4); transform: scale(1.05); }
+    .playZone.horizontal { width: 82px; height: 46px; margin: 0 4px; }
+    .playZone.vertical { width: 46px; height: 82px; margin: 4px 0; }
+
+    .slamHand {
+      position: absolute; right: -18px; top: -18px; width: 44px; height: 44px; border-radius: 50%; background: gold; color: #111; display: flex; align-items: center; justify-content: center; font-size: 26px; font-weight: bold; border: 3px solid #fff4a8; box-shadow: 0 0 22px rgba(255, 215, 0, .95); animation: slamHandPop .22s ease-out; z-index: 50; cursor: pointer; user-select: none;
+    }
+    @keyframes slamHandPop { from { transform: scale(.4) rotate(-25deg); opacity: 0; } to { transform: scale(1) rotate(0deg); opacity: 1; } }
+
+    .yourTurn { color: #00ffcc; font-weight: bold; font-size: 20px; }
+
+    .seat {
+      position: absolute; display: flex; align-items: center; width: auto; min-width: 140px; max-width: 190px;
+      padding: 6px 16px 6px 6px; background: rgba(20, 15, 30, 0.75); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 40px; box-shadow: 0 8px 24px rgba(0,0,0,0.5); z-index: 4; transition: all 0.3s ease;
+    }
+    
+    .seat.empty { opacity: 0.35; }
+    .seat.turnSeat { border-color: rgba(255, 215, 0, 0.9); box-shadow: 0 0 20px rgba(255, 215, 0, 0.6); background: rgba(40, 30, 10, 0.85); }
+    .seat.turnUrgent { animation: urgentPulse 0.75s infinite; }
+    @keyframes urgentPulse { 0% { box-shadow: 0 0 12px rgba(255, 215, 0, .4); filter: brightness(1); } 50% { box-shadow: 0 0 30px rgba(255, 215, 0, 1); filter: brightness(1.2); } 100% { box-shadow: 0 0 12px rgba(255, 215, 0, .4); filter: brightness(1); } }
+
+    .seat.bottom { bottom: 110px; left: 25px; transform: none; }
+    .seat.left { top: 25px; left: 25px; transform: none; }
+    .seat.top { top: 25px; right: 25px; transform: none; }
+    .seat.right { bottom: 110px; right: 25px; transform: none; }
+
+    .avatar { width: 46px; height: 46px; flex-shrink: 0; border-radius: 50%; background: linear-gradient(135deg, #6551a7, #37256a); border: 2px solid rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 20px; overflow: hidden; }
+    .avatar img { width: 100%; height: 100%; object-fit: cover; }
+    .seatInfo { margin-left: 10px; display: flex; flex-direction: column; text-align: left; overflow: hidden; }
+    .seatName { font-weight: 600; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .seatScore { color: gold; font-size: 13px; font-weight: bold; margin-top: 2px; }
+    .seatMeta { font-size: 11px; color: #aaa; margin-top: 1px; }
+
+    .handTray { position: absolute; left: 50%; bottom: 8px; transform: translateX(-50%); width: min(760px, 92%); min-height: 92px; background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.18); border-radius: 18px 18px 0 0; padding: 8px; box-shadow: 0 -6px 25px rgba(0,0,0,.4); z-index: 6; }
+    .handHeader { font-size: 13px; margin-bottom: 4px; color: #ddd; }
+    .handTileWrap { display: inline-block; position: relative; vertical-align: middle; margin: 0 4px; }
+    .slamHandButton { position: absolute; right: -12px; top: -14px; width: 34px; height: 34px; border-radius: 50%; padding: 0; margin: 0; font-size: 18px; background: #ffd700; color: #111; border: 2px solid #7a5200; box-shadow: 0 0 14px rgba(255, 215, 0, .75); z-index: 20; }
+    .slamHandButton.armed { background: #ff7a00; color: #fff; animation: urgentPulse 0.65s infinite; }
+
+    .domino-wrapper { display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .domino-wrapper.vertical { width: 46px; height: 82px; }
+    .domino-wrapper.horizontal { width: 82px; height: 46px; }
+
+    .domino {
+      display: inline-flex; flex-direction: column; width: 42px; height: 78px; padding: 3px 0; align-items: center;
+      background: #f7f7f7; color: black; border: 2px solid #222; border-radius: 9px; box-sizing: content-box;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.45); cursor: pointer; transition: filter 0.2s, transform 0.2s; margin: 0; flex-shrink: 0;
+    }
+    
+    .dominoHalf { position: relative; width: 34px; height: 34px; flex-shrink: 0; }
+    .dominoHalf:first-child { border-bottom: 2px solid #222; margin-bottom: 2px; }
+
+    .domino.selected { background: gold; outline: 4px solid orange; }
+    .domino.spinner { background: #fff58a; outline: 3px solid gold; box-shadow: 0 0 12px gold; }
+    .domino.slamLoose { z-index: 30; transition: transform 0.12s ease; filter: brightness(1.15); box-shadow: 0 8px 18px rgba(0,0,0,0.75); }
+    .domino.slamRestore { transition: transform 0.75s cubic-bezier(.18,.89,.32,1.18); }
+
+    .pip { width: 6px; height: 6px; background: #111; border-radius: 50%; position: absolute; }
+    .pip.tl { top: 4px; left: 4px; } .pip.tc { top: 4px; left: 14px; } .pip.tr { top: 4px; right: 4px; }
+    .pip.ml { top: 14px; left: 4px; } .pip.mc { top: 14px; left: 14px; } .pip.mr { top: 14px; right: 4px; }
+    .pip.bl { bottom: 4px; left: 4px; } .pip.bc { bottom: 4px; left: 14px; } .pip.br { bottom: 4px; right: 4px; }
+
+    .actionBar { margin: 10px auto; max-width: 900px; background: #111; border: 1px solid #444; border-radius: 12px; padding: 10px; }
+    .scoreToggle { margin-top: 6px; font-size: 14px; }
+    #chatBox { height: 120px; overflow-y: auto; text-align: left; border: 1px solid #555; padding: 10px; background: #050505; }
+    #chatInput { width: 70%; padding: 10px; }
+
+    @media (max-width: 700px) {
+      h1 { font-size: 22px; } .tableShell { height: 620px; min-height: 620px; } 
+      .seat { min-width: 110px; padding: 4px 12px 4px 4px; }
+      .seat.bottom { bottom: 130px; left: 10px; } .seat.right { bottom: 130px; right: 10px; }
+      .seat.top { top: 15px; right: 10px; } .seat.left { top: 15px; left: 10px; }
+      .avatar { width: 38px; height: 38px; font-size: 16px; }
+      .seatName { font-size: 12px; } .seatScore { font-size: 11px; } .seatMeta { font-size: 10px; }
+      .tableCenter { top: 47%; }
+      .domino-wrapper.vertical { width: 40px; height: 72px; } .domino-wrapper.horizontal { width: 72px; height: 40px; }
+      .domino { width: 36px; height: 68px; padding: 2px 0; } .dominoHalf { width: 30px; height: 30px; }
+      .playZone.horizontal { width: 72px; height: 40px; } .playZone.vertical { width: 40px; height: 72px; }
+      .handTray { min-height: 116px; overflow-x: auto; white-space: nowrap; } button { width: 90%; display: block; margin: 8px auto; } #chatInput, #hostIntro, #tableName { width: 90%; }
+    }
+  </style>
+</head>
+
+<body>
+  <h1>8th District Domino Table</h1>
+
+  <p id="status">Connecting...</p>
+
+  <div id="leaveModal" class="modalOverlay hidden">
+    <div class="modalContent">
+      <h2 style="color: gold; margin-top: 0;">Leave Seat</h2>
+      <p style="margin-bottom: 20px;">Would you like to stay in the room and spectate, or return to the town square?</p>
+      <button id="btnBecomeSpectator" class="btn-spectate">Become Spectator</button>
+      <button id="btnReturnLobby" class="btn-lobby">Return to Lobby</button>
+      <button id="btnCancelLeave" class="btn-cancel">Cancel</button>
+    </div>
+  </div>
+
+  <div id="hostOptions" class="options hidden">
+    <h3>Host Table Options</h3>
+    <label>Table Name (Must be unique):</label><br />
+    <input id="tableName" placeholder="Give your table a unique name" /><br /><br />
+    <label>Host Intro:</label><br />
+    <input id="hostIntro" placeholder="Set your table intro message" /><br /><br />
+    <label>Table Format:</label>
+    <select id="tableFormat">
+      <option value="4-standard" selected>Standard 4 Player</option>
+      <option value="4-partners">2v2 Partners</option>
+      <option value="2-1v1">1v1 (2 Players)</option>
+    </select>
+    <span id="drawRuleContainer">
+      <label>Drawing Rule:</label>
+      <select id="drawRule"><option value="drawUntilPlayable" selected>Draw until playable</option><option value="drawAndPass">Draw and Pass (1 tile)</option></select>
+    </span>
+    <span id="handSizeContainer" class="hidden">
+      <label>1v1 Hand:</label>
+      <select id="handSize"><option value="7" selected>7 Tiles</option><option value="9">9 Tiles</option></select>
+    </span>
+    <label>Scoring:</label>
+    <select id="scoringMode"><option value="standard" selected>Count 5</option><option value="noFive">No 5's</option></select>
+    <span id="collectionContainer">
+      <label>Collection:</label>
+      <select id="collectionMode"><option value="allPlayers" selected>Winner collects from all</option><option value="backMan">Back Man</option></select>
+    </span>
+    <label>Target Score:</label>
+    <select id="targetScore"><option value="5">5 Rounds</option><option value="10">10 Rounds</option><option value="100">100</option><option value="150" selected>150</option></select>
+    <br />
+    <label><input type="checkbox" id="isPrivate" /> Private invite-only players</label>
+    <label><input type="checkbox" id="allowSpectators" checked /> Allow open spectators</label>
+    <p id="hostInviteCode"></p>
+    <button id="launchBtn" disabled>Launch / Update Table</button>
+  </div>
+
+  <div id="gameArea" class="hidden">
+    <div class="tableShell" id="tableShell">
+      <div id="washOverlay" class="hidden"></div>
+      <div class="tableRail"></div>
+      
+      <div id="seatTop" class="seat top empty"></div><div id="seatRight" class="seat right empty"></div>
+      <div id="seatBottom" class="seat bottom empty"></div><div id="seatLeft" class="seat left empty"></div>
+      
+      <div id="board" class="tableCenter" style="--center-w: 46px; --center-h: 82px;">
+        <div id="branchTop" class="branchColumn branchTop"></div>
+        <div id="branchLeft" class="branchRow branchLeft"></div>
+        <div id="centerSlot" class="centerSlot"></div>
+        <div id="branchRight" class="branchRow branchRight"></div>
+        <div id="branchBottom" class="branchColumn branchBottom"></div>
+      </div>
+
+      <div class="handTray">
+        <div class="handHeader">Your Hand <span id="yourTurnBox" class="yourTurn"></span></div>
+        <div id="hand"></div>
+      </div>
+    </div>
+
+    <div class="actionBar">
+      <button id="drawBtn" disabled>Draw Bone</button>
+      <button id="knockBtn" disabled>👊</button>
+      <button id="leaveBtn" disabled>Leave Table</button>
+      <label class="scoreToggle"><input type="checkbox" id="hideScoreToggle" /> Hide my score from others</label>
+    </div>
+    <div id="spectatorActions" class="actionBar hidden">
+      <input id="inviteInput" placeholder="Invite code if needed" />
+      <button id="joinBtn" disabled>Join as Player</button>
+      <button id="watchBtn" disabled>Watch Table</button>
+      <button id="reserveBtn" disabled>Reserve Seat</button>
+    </div>
+    <div class="queueBox">
+      <h3>Seat Queue</h3><div id="queueList">No one waiting.</div>
+      <h3>Spectators</h3><div id="spectators">None</div>
+    </div>
+    <div id="chatPanel" class="chat">
+      <h3>Chat</h3><div id="chatBox"></div>
+      <input id="chatInput" placeholder="Type message..." /><button id="sendBtn">Send</button>
+    </div>
+  </div>
+
+  <script type="module">
+    import { Client } from "https://esm.sh/@colyseus/sdk@0.17.40";
+
+    let client; let room; let playerName;
+    let selectedTileId = null; let myHand = []; let latestState = null;
+    let timerInterval = null; let createMode = false; let autoActionExecuted = false;
+    let slamArmedTileId = null; let slamRestoreTimer = null;
+
+    let scrollPercent = 0; let isResizing = false; let resizeTimer;
+    window.addEventListener('resize', () => {
+      if (!isResizing) {
+          const scrollY = window.scrollY; const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+          scrollPercent = maxScroll > 0 ? (scrollY / maxScroll) : 0; isResizing = true;
+      }
+      const newMaxScroll = document.documentElement.scrollHeight - window.innerHeight;
+      window.scrollTo(0, scrollPercent * newMaxScroll);
+      clearTimeout(resizeTimer); resizeTimer = setTimeout(() => { isResizing = false; }, 150);
+      adjustBoardScale();
+    });
+
+    function isMeHost() { return latestState && room && latestState.hostId === room.sessionId; }
+    function amIPlayer() { return latestState && room && latestState.players?.some(player => player.id === room.sessionId); }
+    function amISpectator() { return latestState && room && latestState.spectators?.some(player => player.id === room.sessionId); }
+    function isMyTurn() { return latestState && room && latestState.currentTurn && latestState.currentTurn.id === room.sessionId; }
+    function tableLaunched() { return latestState && latestState.tableOptions && latestState.tableOptions.tableLaunched; }
+    function getSelectedTile() { return myHand.find(tile => tile.id === selectedTileId); }
+
+    function getPipPositions(number) {
+      const map = { 0: [], 1: ["mc"], 2: ["tl", "br"], 3: ["tl", "mc", "br"], 4: ["tl", "tr", "bl", "br"], 5: ["tl", "tr", "mc", "bl", "br"], 6: ["tl", "tr", "ml", "mr", "bl", "br"] };
+      return map[number] || [];
+    }
+
+    function createHalf(number) {
+      const half = document.createElement("div"); half.className = "dominoHalf";
+      getPipPositions(number).forEach(position => { const pip = document.createElement("span"); pip.className = "pip " + position; half.appendChild(pip); });
+      return half;
+    }
+
+    function createDominoElement(tile, options = {}) {
+      const wrap = document.createElement("div");
+      wrap.className = "domino-wrapper " + (options.wrapperClass || "vertical");
+
+      const domino = document.createElement("div");
+      domino.className = "domino";
+      if (options.selected) domino.classList.add("selected");
+      if (options.spinner) domino.classList.add("spinner");
+
+      if (options.rotation !== undefined) {
+         domino.style.transform = `rotate(${options.rotation}deg)`;
+      }
+
+      domino.appendChild(createHalf(tile.left));
+      domino.appendChild(createHalf(tile.right));
+
+      wrap.appendChild(domino);
+      return { wrap, domino };
+    }
+
+    function getInitials(name) { return (name || "?").trim().charAt(0).toUpperCase(); }
+    function createAvatar(player) {
+      const avatar = document.createElement("div"); avatar.className = "avatar";
+      if (player?.avatarUrl) { const img = document.createElement("img"); img.src = player.avatarUrl; avatar.appendChild(img); } 
+      else { avatar.textContent = player ? getInitials(player.name) : "?"; }
+      return avatar;
+    }
+
+    function getTimerPercent() {
+      if (!latestState || !latestState.gameStarted || !latestState.turnExpiresAt) return 0;
+      const totalSeconds = latestState.tableOptions?.turnTimerSeconds || 30;
+      const secondsLeft = Math.max(0, Math.ceil((latestState.turnExpiresAt - Date.now()) / 1000));
+      return Math.max(0, Math.min(1, secondsLeft / totalSeconds));
+    }
+
+    function getSecondsLeft() {
+      if (!latestState || !latestState.gameStarted || !latestState.turnExpiresAt) return 0;
+      return Math.max(0, Math.ceil((latestState.turnExpiresAt - Date.now()) / 1000));
+    }
+
+    function updateActiveSeatTimerGlow() {
+      const secondsLeft = getSecondsLeft();
+      document.querySelectorAll(".seat.turnSeat").forEach(seat => {
+        if (secondsLeft <= 7 && latestState?.gameStarted) seat.classList.add("turnUrgent");
+        else seat.classList.remove("turnUrgent");
+      });
+    }
+
+    function startLocalTimer() { if (timerInterval) clearInterval(timerInterval); timerInterval = setInterval(() => updateActiveSeatTimerGlow(), 250); }
+
+    function playWashAnimation() {
+      const overlay = document.getElementById("washOverlay");
+      overlay.innerHTML = ""; overlay.classList.remove("hidden");
+      for(let i=0; i<28; i++) {
+        const t = document.createElement("div"); t.className = "washTile";
+        t.style.setProperty('--dx', `${(Math.random() - 0.5) * 120}px`); t.style.setProperty('--dy', `${(Math.random() - 0.5) * 120}px`); t.style.setProperty('--dr', `${Math.random() * 360}deg`);
+        const xStart = (Math.random() - 0.5) * 150; const yStart = (Math.random() - 0.5) * 100;
+        t.style.left = `calc(50% + ${xStart}px)`; t.style.top = `calc(50% + ${yStart}px)`; t.style.animationDelay = `${Math.random() * 0.5}s`;
+        overlay.appendChild(t);
+      }
+      setTimeout(() => { overlay.classList.add("hidden"); }, 2000);
+    }
+
+    function canPlaySide(tile, side) {
+      if (!tile || !latestState) return false;
+      if (!latestState.boardCenter) return true;
+      const openEnds = latestState.openEnds || {};
+      const target = openEnds[side];
+      if (target === null || target === undefined) return false;
+      return tile.left === target || tile.right === target;
+    }
+
+    function removeSlamHand() { document.querySelectorAll(".slamHand").forEach(button => button.remove()); }
+
+    function updatePlayZones() {
+      const tile = getSelectedTile();
+      
+      document.querySelectorAll(".playZone").forEach(el => el.remove());
+
+      if (!tile || !isMyTurn()) return;
+
+      const boardCenter = latestState?.boardCenter;
+
+      if (boardCenter) {
+          ["left", "right", "top", "bottom"].forEach(side => {
+              if (canPlaySide(tile, side)) {
+                  const zone = document.createElement("div");
+                  const isDouble = tile.left === tile.right;
+                  let zoneClass = "horizontal";
+
+                  if (side === "left" || side === "right") { zoneClass = isDouble ? "vertical" : "horizontal"; } 
+                  else { zoneClass = isDouble ? "horizontal" : "vertical"; }
+
+                  zone.className = `playZone active ${zoneClass}`;
+                  zone.onclick = () => playSelectedTile(side);
+                  
+                  document.getElementById("branch" + side.charAt(0).toUpperCase() + side.slice(1)).appendChild(zone);
+              }
+          });
+      }
+    }
+
+    function updateConnectionButtons() {
+      const joinBtn = document.getElementById("joinBtn"); const watchBtn = document.getElementById("watchBtn"); const reserveBtn = document.getElementById("reserveBtn");
+      const inviteInput = document.getElementById("inviteInput"); const spectatorActions = document.getElementById("spectatorActions");
+      if (amIPlayer()) { spectatorActions.classList.add("hidden"); return; }
+      spectatorActions.classList.remove("hidden"); inviteInput.classList.remove("hidden");
+      if (amISpectator()) { joinBtn.classList.add("hidden"); watchBtn.classList.add("hidden"); reserveBtn.classList.remove("hidden"); } 
+      else { joinBtn.classList.remove("hidden"); watchBtn.classList.remove("hidden"); reserveBtn.classList.add("hidden"); }
+    }
+
+    function updateActionButtons() {
+      const myTurn = latestState?.gameStarted && isMyTurn();
+      document.getElementById("drawBtn").disabled = !myTurn;
+      document.getElementById("knockBtn").disabled = !myTurn;
+    }
+
+    function updateGameModeControls() {
+      const tableFormat = document.getElementById("tableFormat").value;
+      const handSizeContainer = document.getElementById("handSizeContainer");
+      const collectionContainer = document.getElementById("collectionContainer");
+      if (tableFormat === "2-1v1") { handSizeContainer.classList.remove("hidden"); collectionContainer.classList.add("hidden"); } 
+      else if (tableFormat === "4-partners") { handSizeContainer.classList.add("hidden"); collectionContainer.classList.add("hidden"); } 
+      else { handSizeContainer.classList.add("hidden"); collectionContainer.classList.remove("hidden"); }
+    }
+
+    function renderSeat(position, player) {
+      const box = document.getElementById(position.elementId);
+      box.innerHTML = ""; box.classList.remove("empty", "turnSeat", "turnUrgent");
+      if (!player) {
+        box.classList.add("empty"); box.appendChild(createAvatar(null));
+        const info = document.createElement("div"); info.className = "seatInfo"; info.innerHTML = `<div class="seatName">Open Seat</div><div class="seatMeta">Seat ${position.seatNumber}</div>`;
+        box.appendChild(info); return;
+      }
+      if (latestState?.currentTurn?.id === player.id) box.classList.add("turnSeat");
+      box.appendChild(createAvatar(player));
+      const scoreText = player.score === null ? "Hidden" : player.score;
+      const info = document.createElement("div"); info.className = "seatInfo"; info.innerHTML = `<div class="seatName">${player.name}${player.isHost ? " 👑" : ""}</div><div class="seatScore">Score: ${scoreText}</div><div class="seatMeta">Tiles: ${player.handCount}</div>`;
+      box.appendChild(info);
+    }
+
+    function renderSeats(players) {
+      const playerCount = latestState?.tableOptions?.playerCount || 4;
+      const positions4 = [{ elementId: "seatBottom", seatNumber: 1 }, { elementId: "seatLeft", seatNumber: 2 }, { elementId: "seatTop", seatNumber: 3 }, { elementId: "seatRight", seatNumber: 4 }];
+      const positions2 = [{ elementId: "seatBottom", seatNumber: 1 }, { elementId: "seatTop", seatNumber: 2 }];
+      document.getElementById("seatLeft").classList.toggle("hidden", playerCount === 2); document.getElementById("seatRight").classList.toggle("hidden", playerCount === 2);
+      const positions = playerCount === 2 ? positions2 : positions4;
+      positions.forEach(position => { const player = players.find(p => p.seatNumber === position.seatNumber); renderSeat(position, player); });
+      updateActiveSeatTimerGlow();
+    }
+
+    function showSetupOnly() {
+      document.getElementById("gameArea").classList.add("hidden");
+      document.getElementById("hostOptions").classList.remove("hidden");
+      document.getElementById("launchBtn").textContent = "Launch Table";
+    }
+
+    function showGameTable(data) {
+      document.getElementById("gameArea").classList.remove("hidden");
+      if (isMeHost() && !data.gameStarted && tableLaunched() === false) document.getElementById("hostOptions").classList.remove("hidden");
+      else document.getElementById("hostOptions").classList.add("hidden");
+    }
+
+    function renderQueue(queue) {
+      const box = document.getElementById("queueList");
+      if (!queue || queue.length === 0) { box.textContent = "No one waiting."; return; }
+      box.innerHTML = ""; queue.forEach(person => { const div = document.createElement("div"); div.textContent = `${person.queuePosition}. ${person.name}`; box.appendChild(div); });
+    }
+
+    function adjustBoardScale() {
+      if (!latestState || !latestState.boardCenter) {
+        document.getElementById("board").style.transform = "translate(-50%, -50%) scale(1)";
+        return;
+      }
+
+      const shell = document.getElementById("tableShell");
+      const safeWidth = shell.clientWidth - 100; 
+      const safeHeight = shell.clientHeight - 240; 
+
+      const leftCount = latestState.boardBranches?.left?.length || 0;
+      const rightCount = latestState.boardBranches?.right?.length || 0;
+      const topCount = latestState.boardBranches?.top?.length || 0;
+      const bottomCount = latestState.boardBranches?.bottom?.length || 0;
+
+      const estimatedWidth = (leftCount + rightCount + 2) * 82; 
+      const estimatedHeight = (topCount + bottomCount + 2) * 82;
+
+      let scale = 1;
+      if (estimatedWidth > safeWidth || estimatedHeight > safeHeight) {
+        scale = Math.min(safeWidth / estimatedWidth, safeHeight / estimatedHeight);
+        scale = Math.max(scale, 0.35); 
+      }
+      document.getElementById("board").style.transform = `translate(-50%, -50%) scale(${scale})`;
+    }
+
+    function clearBoardBranches() {
+      document.getElementById("centerSlot").innerHTML = ""; document.getElementById("branchLeft").innerHTML = "";
+      document.getElementById("branchRight").innerHTML = ""; document.getElementById("branchTop").innerHTML = ""; document.getElementById("branchBottom").innerHTML = "";
+    }
+
+    function renderBoard() {
+      clearBoardBranches();
+
+      const c = latestState?.boardCenter;
+      if (!c) { adjustBoardScale(); return; }
+
+      const isCDouble = c.left === c.right;
+      let centerRotation = isCDouble ? 0 : -90;
+
+      const { wrap: cWrap } = createDominoElement(c, {
+        wrapperClass: isCDouble ? "vertical" : "horizontal",
+        rotation: centerRotation,
+        spinner: latestState.spinnerId === c.id
+      });
+      cWrap.classList.add("boardDomino");
+      document.getElementById("centerSlot").appendChild(cWrap);
+
+      if (isCDouble) {
+        document.getElementById("board").style.setProperty('--center-w', '46px');
+        document.getElementById("board").style.setProperty('--center-h', '82px');
+      } else {
+        document.getElementById("board").style.setProperty('--center-w', '82px');
+        document.getElementById("board").style.setProperty('--center-h', '46px');
+      }
+
+      ["left", "right", "top", "bottom"].forEach(side => {
+        const list = latestState?.boardBranches?.[side] || [];
+        list.forEach(tile => {
+          const isDouble = tile.left === tile.right;
+          let wrapperClass = "vertical";
+          let rotation = 0;
+
+          if (side === "left") {
+             wrapperClass = isDouble ? "vertical" : "horizontal";
+             if (isDouble) rotation = 0; else rotation = (tile.left === tile.outward) ? -90 : 90;
+          }
+          if (side === "right") {
+             wrapperClass = isDouble ? "vertical" : "horizontal";
+             if (isDouble) rotation = 0; else rotation = (tile.left === tile.outward) ? 90 : -90;
+          }
+          if (side === "top") {
+             wrapperClass = isDouble ? "horizontal" : "vertical";
+             if (isDouble) rotation = 90; else rotation = (tile.left === tile.outward) ? 0 : 180;
+          }
+          if (side === "bottom") {
+             wrapperClass = isDouble ? "horizontal" : "vertical";
+             if (isDouble) rotation = 90; else rotation = (tile.left === tile.outward) ? 180 : 0;
+          }
+
+          const { wrap } = createDominoElement(tile, {
+            wrapperClass, rotation,
+            spinner: latestState.spinnerId === tile.id
+          });
+          wrap.classList.add("boardDomino");
+          document.getElementById("branch" + side.charAt(0).toUpperCase() + side.slice(1)).appendChild(wrap);
+        });
+      });
+
+      adjustBoardScale();
+    }
+
+    function renderHand() {
+      const box = document.getElementById("hand"); box.innerHTML = "";
+      if (myHand.length === 0) {
+        box.textContent = "No tiles."; selectedTileId = null; slamArmedTileId = null;
+        updatePlayZones(); updateActionButtons(); return;
+      }
+
+      myHand.forEach(tile => {
+        const wrapContainer = document.createElement("span"); wrapContainer.className = "handTileWrap";
+        const { wrap, domino } = createDominoElement(tile, { wrapperClass: "vertical", rotation: 0, selected: tile.id === selectedTileId });
+
+        domino.onclick = () => {
+          if (!isMyTurn()) { alert("It is not your turn yet."); return; }
+
+          if (!latestState.boardCenter) {
+             room.send("playTile", { tileId: tile.id, side: "right", slam: false });
+             return;
+          }
+
+          if (selectedTileId !== tile.id) slamArmedTileId = null;
+          selectedTileId = tile.id; renderHand(); updatePlayZones();
+        };
+
+        wrapContainer.appendChild(wrap);
+
+        if (tile.id === selectedTileId && isMyTurn() && latestState.boardCenter) {
+          const slamBtn = document.createElement("button"); slamBtn.className = "slamHandButton"; slamBtn.textContent = "✊"; slamBtn.title = "Attempt slam on this tile. Server only allows it for 20+ points or game-winning score.";
+          if (slamArmedTileId === tile.id) slamBtn.classList.add("armed");
+          slamBtn.onclick = (event) => { event.stopPropagation(); slamArmedTileId = slamArmedTileId === tile.id ? null : tile.id; renderHand(); };
+          wrapContainer.appendChild(slamBtn);
+        }
+        box.appendChild(wrapContainer);
+      });
+      updatePlayZones(); updateActionButtons();
+    }
+
+    function renderState(data) {
+      latestState = data;
+
+      if (createMode && isMeHost() && !tableLaunched()) showSetupOnly(); else showGameTable(data);
+
+      renderSeats(data.players || []); updateConnectionButtons(); renderQueue(data.queue || []); renderBoard();
+      
+      startLocalTimer();
+
+      if (data.tableOptions) {
+        document.getElementById("tableName").value = data.tableOptions.tableName || "";
+        document.getElementById("hostIntro").value = data.tableOptions.hostIntro || "";
+        if (data.tableOptions.playerCount === 4) {
+          if (data.tableOptions.collectionMode === "partners") document.getElementById("tableFormat").value = "4-partners";
+          else { document.getElementById("tableFormat").value = "4-standard"; document.getElementById("collectionMode").value = data.tableOptions.collectionMode; }
+        } else {
+          document.getElementById("tableFormat").value = "2-1v1"; document.getElementById("handSize").value = data.tableOptions.handSize;
+        }
+
+        if (data.tableOptions.drawRule) document.getElementById("drawRule").value = data.tableOptions.drawRule;
+        document.getElementById("scoringMode").value = data.tableOptions.scoringMode;
+        document.getElementById("targetScore").value = data.tableOptions.targetScore;
+        document.getElementById("isPrivate").checked = data.tableOptions.isPrivate;
+        document.getElementById("allowSpectators").checked = data.tableOptions.allowSpectators;
+        updateGameModeControls();
+      }
+
+      const me = data.players?.find(player => player.id === room.sessionId);
+      if (me) document.getElementById("hideScoreToggle").checked = Boolean(me.scoreHidden);
+      updateActionButtons(); updatePlayZones();
+    }
+
+    function addChatMessage(msg) {
+      const box = document.getElementById("chatBox"); const div = document.createElement("div");
+      div.textContent = msg.name + ": " + msg.text; box.appendChild(div); box.scrollTop = box.scrollHeight;
+    }
+
+    function getSelectedOptionsPayload() {
+      const format = document.getElementById("tableFormat").value;
+      let pCount = 4; let cMode = document.getElementById("collectionMode").value; let hSize = 7;
+
+      if (format === "4-standard") { pCount = 4; hSize = 7; } 
+      else if (format === "4-partners") { pCount = 4; hSize = 7; cMode = "partners"; } 
+      else if (format === "2-1v1") { pCount = 2; hSize = Number(document.getElementById("handSize").value); cMode = "allPlayers"; }
+
+      return {
+        tableName: document.getElementById("tableName").value, hostIntro: document.getElementById("hostIntro").value,
+        drawRule: document.getElementById("drawRule").value, playerCount: pCount, handSize: hSize, scoringMode: document.getElementById("scoringMode").value,
+        collectionMode: cMode, targetScore: Number(document.getElementById("targetScore").value), isPrivate: document.getElementById("isPrivate").checked,
+        allowSpectators: document.getElementById("allowSpectators").checked, passPenalty: true, turnTimerSeconds: 30, turnOrder: "clockwise"
+      };
+    }
+
+    function playSelectedTile(side) {
+      if (!room || !selectedTileId) return;
+      if (!isMyTurn()) { alert("It is not your turn yet."); return; }
+      
+      const slamRequested = slamArmedTileId === selectedTileId;
+      room.send("playTile", { tileId: selectedTileId, side, slam: slamRequested });
+      selectedTileId = null; slamArmedTileId = null; renderHand();
+    }
+
+    function triggerSlamEffect(payload = {}) {
+      const table = document.getElementById("tableShell");
+      const boardTiles = Array.from(document.querySelectorAll("#board .domino"));
+      table.classList.remove("slamRock"); void table.offsetWidth; table.classList.add("slamRock");
+
+      if (slamRestoreTimer) { clearTimeout(slamRestoreTimer); slamRestoreTimer = null; }
+
+      boardTiles.forEach(tile => {
+        tile.dataset.baseTransform = tile.style.transform || "";
+        const x = Math.round(Math.random() * 70 - 35); const y = Math.round(Math.random() * 56 - 28); const r = Math.round(Math.random() * 34 - 17);
+        tile.classList.remove("slamRestore"); tile.classList.add("slamLoose");
+        tile.style.transform = `${tile.dataset.baseTransform} translate(${x}px, ${y}px) rotate(${r}deg)`;
+      });
+
+      slamRestoreTimer = setTimeout(() => {
+        boardTiles.forEach(tile => {
+          tile.classList.remove("slamLoose"); tile.classList.add("slamRestore");
+          tile.style.transform = tile.dataset.baseTransform;
+          setTimeout(() => { tile.classList.remove("slamRestore"); delete tile.dataset.baseTransform; }, 800);
+        });
+      }, payload.restoreTilesAfterMs || 1200);
+      setTimeout(() => { table.classList.remove("slamRock"); }, payload.durationMs || 1500);
+    }
+
+    async function connect() {
+      try {
+        playerName = prompt("Enter your name:");
+        if (!playerName || playerName.trim() === "") playerName = "Guest";
+        client = new Client("ws://localhost:2567");
+
+        const params = new URLSearchParams(window.location.search);
+        const roomId = params.get("roomId"); createMode = params.get("create") === "1";
+        const action = params.get("action");
+
+        if (createMode) room = await client.create("table");
+        else if (roomId) room = await client.joinById(roomId);
+        else room = await client.joinOrCreate("table");
+
+        document.getElementById("status").textContent = "Connected as " + playerName + " | Room: " + room.roomId;
+
+        document.getElementById("joinBtn").disabled = false; document.getElementById("watchBtn").disabled = false;
+        document.getElementById("reserveBtn").disabled = false; document.getElementById("leaveBtn").disabled = false;
+        document.getElementById("drawBtn").disabled = true; document.getElementById("knockBtn").disabled = true; document.getElementById("launchBtn").disabled = false;
+
+        room.onMessage("update", (data) => {
+          console.log("TABLE UPDATE:", data); renderState(data);
+
+          if (!autoActionExecuted && !amIPlayer() && !amISpectator()) { 
+            autoActionExecuted = true; 
+            if (createMode) { room.send("joinTable", { name: playerName, inviteCode: "" }); } 
+            else if (action === "join") { room.send("joinTable", { name: playerName, inviteCode: "" }); } 
+            else if (action === "watch") { room.send("watchTable", { name: playerName, inviteCode: "" }); } 
+            else if (action === "reserve") { room.send("reserveSeat", { name: playerName, inviteCode: "" }); }
+          }
+        });
+
+        room.onMessage("hostOffer", (data) => { const accept = confirm(data.text); room.send("respondToHostOffer", { accept: accept }); });
+        room.onMessage("yourHand", (data) => { myHand = data.hand || []; renderHand(); });
+        room.onMessage("chat", (msg) => { addChatMessage(msg); });
+        room.onMessage("movePlayed", (move) => { if (move.slam) { triggerSlamEffect({ durationMs: 1500, restoreTilesAfterMs: 1200 }); } });
+        room.onMessage("bonesWashed", () => { playWashAnimation(); });
+        room.onMessage("knock", () => {});
+        room.onMessage("slam", (payload) => { triggerSlamEffect(payload); });
+        room.onMessage("errorMessage", (msg) => { alert(msg.text); });
+
+      } catch (err) {
+        console.error(err); document.getElementById("status").textContent = "Connection failed";
+      }
+    }
+
+    document.getElementById("tableFormat").onchange = () => updateGameModeControls();
+    document.getElementById("joinBtn").onclick = () => { if (!room) return; room.send("joinTable", { name: playerName, inviteCode: document.getElementById("inviteInput").value.trim().toUpperCase() }); };
+    document.getElementById("watchBtn").onclick = () => { if (!room) return; room.send("watchTable", { name: playerName, inviteCode: document.getElementById("inviteInput").value.trim().toUpperCase() }); };
+    document.getElementById("reserveBtn").onclick = () => { if (!room) return; room.send("reserveSeat", { name: playerName, inviteCode: document.getElementById("inviteInput").value.trim().toUpperCase() }); };
+
+    document.getElementById("leaveBtn").onclick = () => {
+      if (!room) return;
+      if (amIPlayer()) document.getElementById("leaveModal").classList.remove("hidden");
+      else { room.send("leaveTable"); window.location.href = "lobby.html"; }
+    };
+
+    document.getElementById("btnBecomeSpectator").onclick = () => {
+      if (room) room.send("becomeSpectator");
+      document.getElementById("leaveModal").classList.add("hidden");
+      myHand = []; selectedTileId = null; slamArmedTileId = null; removeSlamHand(); renderHand();
+    };
+
+    document.getElementById("btnReturnLobby").onclick = () => { if (room) room.send("leaveTable"); window.location.href = "lobby.html"; };
+    document.getElementById("btnCancelLeave").onclick = () => { document.getElementById("leaveModal").classList.add("hidden"); };
+    
+    document.getElementById("drawBtn").onclick = () => { if (!room) return; room.send("drawBone"); };
+    document.getElementById("knockBtn").onclick = () => { if (!room) return; room.send("knock"); };
+
+    document.getElementById("launchBtn").onclick = () => {
+      if (!room) return;
+      if (!tableLaunched()) room.send("launchGame", getSelectedOptionsPayload());
+      else room.send("setOptions", getSelectedOptionsPayload());
+    };
+
+    document.getElementById("hideScoreToggle").onchange = () => { if (!room) return; room.send("setScoreVisibility", { hideScore: document.getElementById("hideScoreToggle").checked }); };
+
+    document.getElementById("sendBtn").onclick = () => {
+      const input = document.getElementById("chatInput"); const text = input.value.trim();
+      if (!text) return; room.send("chat", { text }); input.value = "";
+    };
+
+    document.getElementById("chatInput").addEventListener("keydown", (event) => { if (event.key === "Enter") document.getElementById("sendBtn").click(); });
+
+    connect();
+  </script>
+</body>
+</html>
