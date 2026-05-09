@@ -1,26 +1,23 @@
 {
   "private": true,
-  "name": "my-app",
+  "name": "8th-district-domino-server",
   "version": "0.17.0",
-  "description": "npm init template for bootstrapping an empty Colyseus project",
+  "description": "8th District Domino Colyseus server",
   "type": "module",
   "main": "build/index.js",
   "engines": {
-    "node": ">= 20.9.0"
+    "node": ">=20.9.0"
   },
   "scripts": {
-    "start": "tsx watch src/index.ts",
-    "loadtest": "tsx loadtest/example.ts --room my_room --numClients 2",
+    "start": "tsx src/index.ts",
+    "dev": "tsx watch src/index.ts",
+    "loadtest": "tsx loadtest/example.ts --room table --numClients 2",
     "build": "npm run clean && tsc -p tsconfig.build.json",
     "clean": "rimraf build",
-    "test": "mocha -r tsx test/**.test.ts --exit --timeout 15000"
+    "test": "mocha -r tsx test/**/*.test.ts --exit --timeout 15000"
   },
   "author": "",
   "license": "UNLICENSED",
-  "bugs": {
-    "url": "https://github.com/colyseus/create-colyseus/issues"
-  },
-  "homepage": "https://github.com/colyseus/create-colyseus#readme",
   "devDependencies": {
     "@colyseus/loadtest": "^0.17.7",
     "@colyseus/testing": "^0.17.10",
@@ -33,8 +30,8 @@
     "typescript": "^5.0.4"
   },
   "dependencies": {
-    "@colyseus/tools": "^0.17.0",
     "@colyseus/schema": "^4.0.0",
+    "@colyseus/tools": "^0.17.0",
     "colyseus": "^0.17.6",
     "express": "^4.18.2"
   }

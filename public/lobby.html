@@ -85,7 +85,7 @@
 
       try {
         // THE FIX: Fetch directly from the Monitor API to bypass SDK issues
-        const response = await fetch("https://eightth-district-domino.onrender.com/colyseus/api/rooms");
+        const response = await fetch("https://eightth-district-domino.onrender.com/api/rooms");
         
         if (!response.ok) {
             throw new Error(`Server returned status: ${response.status}`);
@@ -94,7 +94,7 @@
         let rooms = await response.json();
         
         // Filter to make sure we only show our Dominoes rooms
-        rooms = rooms.filter(room => room.name === "my_room");
+        rooms = rooms.filter(room => room.name === "table");
 
         if (!rooms || !rooms.length) {
           box.innerHTML = `<div class="empty-state">No open tables yet. Create one to start the district.</div>`;
