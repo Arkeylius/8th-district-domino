@@ -636,7 +636,6 @@
         playerName = prompt("Enter your name:");
         if (!playerName || playerName.trim() === "") playerName = "Guest";
         
-        // RENDER CONNECTION FIX
         const endpoint = window.location.hostname === "localhost" 
            ? "ws://localhost:2567" 
            : "wss://eightth-district-domino.onrender.com";
@@ -646,7 +645,6 @@
         const roomId = params.get("roomId"); createMode = params.get("create") === "1";
         const action = params.get("action");
 
-        // RENDER ROOM NAME FIX
         if (createMode) room = await client.create("my_room");
         else if (roomId) room = await client.joinById(roomId);
         else room = await client.joinOrCreate("my_room");
